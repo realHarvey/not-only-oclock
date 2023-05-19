@@ -1,0 +1,4 @@
+/.cache/
+/build/
+server/.vscode/
+server/server.exe
