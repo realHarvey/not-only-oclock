@@ -1,6 +1,8 @@
 /*
- * AP端
+ * server
  * Anyone-Copyright 2023 何宏波
+ * wmi的c++ api比较残废，很多信息都获取不了
+ * 告废
  */
 #include <iostream>
 #include <string>
@@ -13,6 +15,8 @@
 #include <iomanip>
 #include <cmath>
 #include <type_traits>
+#include <vector>
+using std::cout, std::endl;
 
 /*
  * update frequency: ms
@@ -20,20 +24,31 @@
 #define UPDATE_FREQ 1000
 #define DISK_NUMBER    3
 
-using std::cout, std::endl;
-
 #define __B2GB(mm) ((float)mm/1024/1024/1024)
-/*
- * input : bytes
- * output: GB
- * precition
- */
+
+/* convert byte to GB */
 #define B2GB(bytes, precision) \
 ({ \
         std::stringstream ss; \
         ss << std::fixed << std::setprecision(precision) << __B2GB(bytes); \
         std::stof(ss.str()); \
 })
+
+/* message buffer */
+static std::vector<char> msg_buffer;
+void Load_Data(char *data)
+{
+        int i;
+        for (i = 0; data[i] != '\0'; i++) {
+                msg_buffer.push_back(data[i]);
+        }
+}
+
+void Send_Msg(int cfd)
+{
+        std::string msg_str(msg_buffer.begin(), msg_buffer.end());
+        send(cfd, msg_str.c_str(), msg_str.length(), 0);
+}
 
 /*
  * Get CPU msg
@@ -44,8 +59,7 @@ void Get_CPU_Info()
         SYSTEM_INFO sys_info;
         
         GetSystemInfo(&sys_info);
-        cout<< "< CPU >" << '\n'
-            << "    Cores: " << sys_info.dwNumberOfProcessors <<'\n';
+        Load_Data((char*)(sys_info.dwNumberOfProcessors));
 }
 
 /*
@@ -165,10 +179,7 @@ int main()
                 goto end;
         }
         cout<< "client connected." <<endl;
-
-        // test sending
-        data = "Hello, client!";
-        send(cfd, data.c_str(), data.length(), 0);
+        
 
 /* msg transfer */
         while(1) {
@@ -176,6 +187,7 @@ int main()
                 Get_GPU_Info();
                 Get_Memory_Info();
                 Get_Disk_Info();
+                Send_Msg(cfd);
                 Sleep(UPDATE_FREQ);
         }
 
